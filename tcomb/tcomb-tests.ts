@@ -8,31 +8,7 @@
 
 'use strict';
 import assert = require('assert');
-var t = <TComb.tcomb> require('../index');
-
-var Any = t.Any;
-var Nil = t.Nil;
-var Bool = t.Bool;
-var Num = t.Num;
-var Str = t.Str;
-var Arr = t.Arr;
-var Obj = t.Obj;
-var Func = t.Func;
-var Err = t.Err;
-var Re = t.Re;
-var Dat = t.Dat;
-var struct = t.struct;
-var enums = t.enums;
-var union = t.union;
-var tuple = t.tuple;
-var maybe = t.maybe;
-var subtype = t.subtype;
-var list = t.list;
-var dict = t.dict;
-var func = t.func;
-var getTypeName = t.getTypeName;
-var mixin = t.mixin;
-var format = t.format;
+import t = require('tcomb');
 
 //
 // setup
@@ -51,17 +27,17 @@ var throwsWithMessage = function (f:any, message:any) {
 var doesNotThrow = assert.doesNotThrow;
 
 var noop = function () {};
-var Point = struct({
-  x: Num,
-  y: Num
+var Point = t.struct({
+  x: t.Number,
+  y: t.Number
 });
 
 describe('update', function () {
 
   var update = t.update;
-  var Tuple = tuple([Str, Num]);
-  var List = list(Num);
-  var Dict = dict(Str, Num);
+  var Tuple = t.tuple([t.String, t.Number]);
+  var List = t.list(t.Number);
+  var Dict = t.dict(t.String, t.Number);
 
   it('should handle $set command', function () {
     var instance = 1;
@@ -74,7 +50,7 @@ describe('update', function () {
   });
 
   it('$set and null value, fix #65', function () {
-    var NullStruct = struct({a: Num, b: maybe(Num)});
+    var NullStruct = t.struct({a: t.Number, b: t.maybe(t.Number)});
     var instance = new NullStruct({a: 1});
     var updated = update(instance, {b: {$set: 2}});
     eq(instance, {a: 1, b: null});
@@ -153,12 +129,12 @@ describe('update', function () {
       var updated = update(instance, {'$merge': {x: 2, y: 2}});
       eq(instance, {x: 0, y: 1});
       eq(updated, {x: 2, y: 2});
-      var Nested = struct({
-        a: Num,
-        b: struct({
-          c: Num,
-          d: Num,
-          e: Num
+      var Nested = t.struct({
+        a: t.Number,
+        b: t.struct({
+          c: t.Number,
+          d: t.Number,
+          e: t.Number
         })
       });
       instance = new Nested({a: 1, b: {c: 2, d: 3, e: 4}});
@@ -234,12 +210,12 @@ describe('update', function () {
   describe('memory saving', function () {
 
     it('should reuse members that are not updated', function () {
-      var Struct = struct({
-        a: Num,
-        b: Str,
-        c: tuple([Num, Num]),
+      var Struct = t.struct({
+        a: t.Number,
+        b: t.String,
+        c: t.tuple([t.Number, t.Number]),
       });
-      var List = list(Struct);
+      var List = t.list(Struct);
       var instance = List([{
         a: 1,
         b: 'one',
@@ -265,8 +241,8 @@ describe('update', function () {
   describe('all together now', function () {
 
     it('should handle mixed commands', function () {
-      var Struct = struct({
-        a: Num,
+      var Struct = t.struct({
+        a: t.Number,
         b: Tuple,
         c: List,
         d: Dict
@@ -292,11 +268,11 @@ describe('update', function () {
     });
 
     it('should handle nested structures', function () {
-      var Struct = struct({
-        a: struct({
-          b: tuple([
-            Str,
-            list(Num)
+      var Struct = t.struct({
+        a: t.struct({
+          b: t.tuple([
+            t.String,
+            t.list(t.Number)
           ])
         })
       });
@@ -333,19 +309,19 @@ describe('assert', function () {
 
   it('should throw a default message', function () {
     throwsWithMessage(function () {
-      assert(1 === 2);
+      assert(false);
     }, 'assert failed');
   });
 
   it('should throw the specified message', function () {
     throwsWithMessage(function () {
-      assert(1 === 2, 'my message');
+      assert(false, 'my message');
     }, 'my message');
   });
 
   it('should format the specified message', function () {
     throwsWithMessage(function () {
-      assert(1 === 2, '%s !== %s', 1, 2);
+      assert(false, '%s !== %s', 1, 2);
     }, '1 !== 2');
   });
 
@@ -359,7 +335,7 @@ describe('assert', function () {
       }
     };
     doesNotThrow(function () {
-      assert(1 === 2, 'report error');
+      assert(false, 'report error');
     });
     t.fail = fail;
   });
@@ -373,38 +349,38 @@ describe('assert', function () {
 describe('format(str, [...])', function () {
 
   it('should format strings', function () {
-    eq(format('%s', 'a'), 'a');
-    eq(format('%s', 2), '2');
-    eq(format('%s === %s', 1, 1), '1 === 1');
+    eq(t.format('%s', 'a'), 'a');
+    eq(t.format('%s', 2), '2');
+    eq(t.format('%s === %s', 1, 1), '1 === 1');
   });
 
   it('should format JSON', function () {
-    eq(format('%j', {a: 1}), '{"a":1}');
+    eq(t.format('%j', {a: 1}), '{"a":1}');
   });
 
   it('should handle undefined formatters', function () {
-    eq(format('%o', 'a'), '%o a');
+    eq(t.format('%o', 'a'), '%o a');
   });
 
   it('should handle escaping %', function () {
-    eq(format('%%s'), '%s');
+    eq(t.format('%%s'), '%s');
   });
 
   it('should not consume an argument with a single %', function () {
-    eq(format('%s%', '100'), '100%');
+    eq(t.format('%s%', '100'), '100%');
   });
 
   it('should handle less arguments than placeholders', function () {
-    eq(format('%s %s', 'a'), 'a %s');
+    eq(t.format('%s %s', 'a'), 'a %s');
   });
 
   it('should handle more arguments than placeholders', function () {
-    eq(format('%s', 'a', 'b', 'c'), 'a b c');
+    eq(t.format('%s', 'a', 'b', 'c'), 'a b c');
   });
 
   it('should be extensible', function () {
-    (<any>format).formatters.l = function (x:any) { return x.length; };
-    eq(format('%l', ['a', 'b', 'c']), '3');
+    (<any>t.format).formatters.l = function (x:any) { return x.length; };
+    eq(t.format('%l', ['a', 'b', 'c']), '3');
   });
 
 });
@@ -414,7 +390,7 @@ describe('mixin(x, y, [overwrite])', function () {
   it('should mix two objects', function () {
     var o1 = {a: 1};
     var o2 = {b: 2};
-    var o3 = mixin(o1, o2);
+    var o3 = t.mixin(o1, o2);
     ok(o3 === o1);
     eq(o3.a, 1);
     eq(o3.b, 2);
@@ -424,14 +400,14 @@ describe('mixin(x, y, [overwrite])', function () {
     throwsWithMessage(function () {
       var o1 = {a: 1};
       var o2 = {a: 2, b: 2};
-      mixin(o1, o2);
+      t.mixin(o1, o2);
     }, 'Cannot overwrite property a');
   });
 
   it('should not throw if a property already exists but overwrite = true', function () {
     var o1 = {a: 1};
     var o2 = {a: 2, b: 2};
-    var o3 = mixin(o1, o2, true);
+    var o3 = t.mixin(o1, o2, true);
     eq(o3.a, 2);
     eq(o3.b, 2);
   });
@@ -441,7 +417,7 @@ describe('mixin(x, y, [overwrite])', function () {
     F.prototype.method = noop;
     var source = new (<any>F)();
     var target = {};
-    mixin(target, source);
+    t.mixin(target, source);
     eq((<any>target).method, undefined);
   });
 
@@ -469,47 +445,47 @@ describe('getFunctionName(f, [defaultName])', function () {
 
 describe('getTypeName(type)', function () {
 
-  var UnnamedStruct = struct({});
-  var NamedStruct = struct({}, 'NamedStruct');
-  var UnnamedUnion = union([Str, Num]);
-  var NamedUnion = union([Str, Num], 'NamedUnion');
-  var UnnamedMaybe = maybe(Str);
-  var NamedMaybe = maybe(Str, 'NamedMaybe');
-  var UnnamedEnums = enums({a: 'A', b: 'B'});
-  var NamedEnums = enums({}, 'NamedEnums');
-  var UnnamedTuple = tuple([Str, Num]);
-  var NamedTuple = tuple([Str, Num], 'NamedTuple');
-  var UnnamedSubtype = subtype(Str, function notEmpty(x) { return x !== ''; });
-  var NamedSubtype = subtype(Str, function (x) { return x !== ''; }, 'NamedSubtype');
-  var UnnamedList = list(Str);
-  var NamedList = list(Str, 'NamedList');
-  var UnnamedDict = dict(Str, Str);
-  var NamedDict = dict(Str, Str, 'NamedDict');
-  var UnnamedFunc = func(Str, Str);
-  var NamedFunc = func(Str, Str, 'NamedFunc');
+  var UnnamedStruct = t.struct({});
+  var NamedStruct = t.struct({}, 'NamedStruct');
+  var UnnamedUnion = t.union([t.String, t.Number]);
+  var NamedUnion = t.union([t.String, t.Number], 'NamedUnion');
+  var UnnamedMaybe = t.maybe(t.String);
+  var NamedMaybe = t.maybe(t.String, 'NamedMaybe');
+  var UnnamedEnums = t.enums({a: 'A', b: 'B'});
+  var NamedEnums = t.enums({}, 'NamedEnums');
+  var UnnamedTuple = t.tuple([t.String, t.Number]);
+  var NamedTuple = t.tuple([t.String, t.Number], 'NamedTuple');
+  var UnnamedSubtype = t.subtype(t.String, function notEmpty(x) { return x !== ''; });
+  var NamedSubtype = t.subtype(t.String, function (x) { return x !== ''; }, 'NamedSubtype');
+  var UnnamedList = t.list(t.String);
+  var NamedList = t.list(t.String, 'NamedList');
+  var UnnamedDict = t.dict(t.String, t.String);
+  var NamedDict = t.dict(t.String, t.String, 'NamedDict');
+  var UnnamedFunc = t.func(t.String, t.String);
+  var NamedFunc = t.func(t.String, t.String, 'NamedFunc');
 
   it('should return the name of a named type', function () {
-    eq(getTypeName(NamedStruct), 'NamedStruct');
-    eq(getTypeName(NamedUnion), 'NamedUnion');
-    eq(getTypeName(NamedMaybe), 'NamedMaybe');
-    eq(getTypeName(NamedEnums), 'NamedEnums');
-    eq(getTypeName(NamedTuple), 'NamedTuple');
-    eq(getTypeName(NamedSubtype), 'NamedSubtype');
-    eq(getTypeName(NamedList), 'NamedList');
-    eq(getTypeName(NamedDict), 'NamedDict');
-    eq(getTypeName(NamedFunc), 'NamedFunc');
+    eq(t.getTypeName(NamedStruct), 'NamedStruct');
+    eq(t.getTypeName(NamedUnion), 'NamedUnion');
+    eq(t.getTypeName(NamedMaybe), 'NamedMaybe');
+    eq(t.getTypeName(NamedEnums), 'NamedEnums');
+    eq(t.getTypeName(NamedTuple), 'NamedTuple');
+    eq(t.getTypeName(NamedSubtype), 'NamedSubtype');
+    eq(t.getTypeName(NamedList), 'NamedList');
+    eq(t.getTypeName(NamedDict), 'NamedDict');
+    eq(t.getTypeName(NamedFunc), 'NamedFunc');
   });
 
   it('should return a meaningful name of a unnamed type', function () {
-    eq(getTypeName(UnnamedStruct), '{}');
-    eq(getTypeName(UnnamedUnion), 'Str | Num');
-    eq(getTypeName(UnnamedMaybe), '?Str');
-    eq(getTypeName(UnnamedEnums), '"a" | "b"');
-    eq(getTypeName(UnnamedTuple), '[Str, Num]');
-    eq(getTypeName(UnnamedSubtype), '{Str | notEmpty}');
-    eq(getTypeName(UnnamedList), 'Array<Str>');
-    eq(getTypeName(UnnamedDict), '{[key:Str]: Str}');
-    eq(getTypeName(UnnamedFunc), '(Str) => Str');
+    eq(t.getTypeName(UnnamedStruct), '{}');
+    eq(t.getTypeName(UnnamedUnion), 'String | Number');
+    eq(t.getTypeName(UnnamedMaybe), '?String');
+    eq(t.getTypeName(UnnamedEnums), '"a" | "b"');
+    eq(t.getTypeName(UnnamedTuple), '[String, Number]');
+    eq(t.getTypeName(UnnamedSubtype), '{String | notEmpty}');
+    eq(t.getTypeName(UnnamedList), 'Array<String>');
+    eq(t.getTypeName(UnnamedDict), '{[key:String]: t.String}');
+    eq(t.getTypeName(UnnamedFunc), '(String) => String');
   });
 
 });
@@ -520,12 +496,12 @@ describe('getTypeName(type)', function () {
 
 describe('Any', function () {
 
-  var T = Any;
+  var T = t.Any;
 
   describe('constructor', function () {
 
     it('should behave like identity', function () {
-      eq(Any('a'), 'a');
+      eq(t.Any('a'), 'a');
     });
 
     it('should throw if used with new', function () {
@@ -565,16 +541,16 @@ describe('Any', function () {
 describe('irreducible types constructors', function () {
 
   [
-    {T: Nil, x: null},
-    {T: Str, x: 'a'},
-    {T: Num, x: 1},
-    {T: Bool, x: true},
-    {T: Arr, x: []},
-    {T: Obj, x: {}},
-    {T: Func, x: noop},
-    {T: Err, x: new Error()},
-    {T: Re, x: /a/},
-    {T: Dat, x: new Date()}
+    {T: t.Nil, x: null},
+    {T: t.String, x: 'a'},
+    {T: t.Number, x: 1},
+    {T: t.Boolean, x: true},
+    {T: t.Array, x: []},
+    {T: t.Object, x: {}},
+    {T: t.Function, x: noop},
+    {T: t.Error, x: new Error()},
+    {T: t.RegExp, x: /a/},
+    {T: t.Date, x: new Date()}
   ].forEach(function (o) {
 
     var { T, x } = o;
@@ -588,7 +564,7 @@ describe('irreducible types constructors', function () {
         /* jshint ignore:start */
         var x = new (<any>T) ();
         /* jshint ignore:end */
-      }, 'Operator `new` is forbidden for type `' + getTypeName(T) + '`');
+      }, 'Operator `new` is forbidden for type `' + t.getTypeName(T) + '`');
     });
 
   });
@@ -600,282 +576,282 @@ describe('Nil', function () {
   describe('#is(x)', function () {
 
     it('should return true when x is null or undefined', function () {
-      ok(Nil.is(null));
-      ok(Nil.is(undefined));
+      ok(t.Nil.is(null));
+      ok(t.Nil.is(undefined));
     });
 
     it('should return false when x is neither null nor undefined', function () {
-      ko(Nil.is(0));
-      ko(Nil.is(true));
-      ko(Nil.is(''));
-      ko(Nil.is([]));
-      ko(Nil.is({}));
-      ko(Nil.is(noop));
-      ko(Nil.is(new Error()));
-      ko(Nil.is(new Date()));
-      ko(Nil.is(/a/));
-      ko(Nil.is(new RegExp('a')));
+      ko(t.Nil.is(0));
+      ko(t.Nil.is(true));
+      ko(t.Nil.is(''));
+      ko(t.Nil.is([]));
+      ko(t.Nil.is({}));
+      ko(t.Nil.is(noop));
+      ko(t.Nil.is(new Error()));
+      ko(t.Nil.is(new Date()));
+      ko(t.Nil.is(/a/));
+      ko(t.Nil.is(new RegExp('a')));
     });
 
   });
 
 });
 
-describe('Bool', function () {
+describe('Boolean', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is true or false', function () {
-      ok(Bool.is(true));
-      ok(Bool.is(false));
+      ok(t.Boolean.is(true));
+      ok(t.Boolean.is(false));
     });
 
     it('should return false when x is neither true nor false', function () {
-      ko(Bool.is(null));
-      ko(Bool.is(undefined));
-      ko(Bool.is(0));
-      ko(Bool.is(''));
-      ko(Bool.is([]));
-      ko(Bool.is({}));
-      ko(Bool.is(noop));
-      ko(Bool.is(/a/));
-      ko(Bool.is(new RegExp('a')));
-      ko(Bool.is(new Error()));
-      ko(Bool.is(new Date()));
+      ko(t.Boolean.is(null));
+      ko(t.Boolean.is(undefined));
+      ko(t.Boolean.is(0));
+      ko(t.Boolean.is(''));
+      ko(t.Boolean.is([]));
+      ko(t.Boolean.is({}));
+      ko(t.Boolean.is(noop));
+      ko(t.Boolean.is(/a/));
+      ko(t.Boolean.is(new RegExp('a')));
+      ko(t.Boolean.is(new Error()));
+      ko(t.Boolean.is(new Date()));
     });
 
   });
 
 });
 
-describe('Num', function () {
+describe('Number', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is a number', function () {
-      ok(Num.is(0));
-      ok(Num.is(1));
+      ok(t.Number.is(0));
+      ok(t.Number.is(1));
       /* jshint ignore:start */
-      ko(Num.is(new Number(1)));
+      ko(t.Number.is(new Number(1)));
       /* jshint ignore:end */
     });
 
     it('should return false when x is not a number', function () {
-      ko(Num.is(NaN));
-      ko(Num.is(Infinity));
-      ko(Num.is(-Infinity));
-      ko(Num.is(null));
-      ko(Num.is(undefined));
-      ko(Num.is(true));
-      ko(Num.is(''));
-      ko(Num.is([]));
-      ko(Num.is({}));
-      ko(Num.is(noop));
-      ko(Num.is(/a/));
-      ko(Num.is(new RegExp('a')));
-      ko(Num.is(new Error()));
-      ko(Num.is(new Date()));
+      ko(t.Number.is(NaN));
+      ko(t.Number.is(Infinity));
+      ko(t.Number.is(-Infinity));
+      ko(t.Number.is(null));
+      ko(t.Number.is(undefined));
+      ko(t.Number.is(true));
+      ko(t.Number.is(''));
+      ko(t.Number.is([]));
+      ko(t.Number.is({}));
+      ko(t.Number.is(noop));
+      ko(t.Number.is(/a/));
+      ko(t.Number.is(new RegExp('a')));
+      ko(t.Number.is(new Error()));
+      ko(t.Number.is(new Date()));
     });
 
   });
 
 });
 
-describe('Str', function () {
+describe('String', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is a string', function () {
-      ok(Str.is(''));
-      ok(Str.is('a'));
+      ok(t.String.is(''));
+      ok(t.String.is('a'));
       /* jshint ignore:start */
-      ko(Str.is(new String('a')));
+      ko(t.String.is(new String('a')));
       /* jshint ignore:end */
     });
 
     it('should return false when x is not a string', function () {
-      ko(Str.is(NaN));
-      ko(Str.is(Infinity));
-      ko(Str.is(-Infinity));
-      ko(Str.is(null));
-      ko(Str.is(undefined));
-      ko(Str.is(true));
-      ko(Str.is(1));
-      ko(Str.is([]));
-      ko(Str.is({}));
-      ko(Str.is(noop));
-      ko(Str.is(/a/));
-      ko(Str.is(new RegExp('a')));
-      ko(Str.is(new Error()));
-      ko(Str.is(new Date()));
+      ko(t.String.is(NaN));
+      ko(t.String.is(Infinity));
+      ko(t.String.is(-Infinity));
+      ko(t.String.is(null));
+      ko(t.String.is(undefined));
+      ko(t.String.is(true));
+      ko(t.String.is(1));
+      ko(t.String.is([]));
+      ko(t.String.is({}));
+      ko(t.String.is(noop));
+      ko(t.String.is(/a/));
+      ko(t.String.is(new RegExp('a')));
+      ko(t.String.is(new Error()));
+      ko(t.String.is(new Date()));
     });
 
   });
 
 });
 
-describe('Arr', function () {
+describe('Array', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is an array', function () {
-      ok(Arr.is([]));
+      ok(t.Array.is([]));
     });
 
     it('should return false when x is not an array', function () {
-      ko(Arr.is(NaN));
-      ko(Arr.is(Infinity));
-      ko(Arr.is(-Infinity));
-      ko(Arr.is(null));
-      ko(Arr.is(undefined));
-      ko(Arr.is(true));
-      ko(Arr.is(1));
-      ko(Arr.is('a'));
-      ko(Arr.is({}));
-      ko(Arr.is(noop));
-      ko(Arr.is(/a/));
-      ko(Arr.is(new RegExp('a')));
-      ko(Arr.is(new Error()));
-      ko(Arr.is(new Date()));
+      ko(t.Array.is(NaN));
+      ko(t.Array.is(Infinity));
+      ko(t.Array.is(-Infinity));
+      ko(t.Array.is(null));
+      ko(t.Array.is(undefined));
+      ko(t.Array.is(true));
+      ko(t.Array.is(1));
+      ko(t.Array.is('a'));
+      ko(t.Array.is({}));
+      ko(t.Array.is(noop));
+      ko(t.Array.is(/a/));
+      ko(t.Array.is(new RegExp('a')));
+      ko(t.Array.is(new Error()));
+      ko(t.Array.is(new Date()));
     });
 
   });
 
 });
 
-describe('Obj', function () {
+describe('Object', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is an object', function () {
       function A() {}
-      ok(Obj.is({}));
-      ok(Obj.is(new (<any>A)()));
+      ok(t.Object.is({}));
+      ok(t.Object.is(new (<any>A)()));
     });
 
     it('should return false when x is not an object', function () {
-      ko(Obj.is(null));
-      ko(Obj.is(undefined));
-      ko(Obj.is(0));
-      ko(Obj.is(''));
-      ko(Obj.is([]));
-      ko(Obj.is(noop));
+      ko(t.Object.is(null));
+      ko(t.Object.is(undefined));
+      ko(t.Object.is(0));
+      ko(t.Object.is(''));
+      ko(t.Object.is([]));
+      ko(t.Object.is(noop));
     });
 
   });
 
 });
 
-describe('Func', function () {
+describe('Function', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is a function', function () {
-      ok(Func.is(noop));
+      ok(t.Function.is(noop));
       /* jshint ignore:start */
-      ok(Func.is(new Function()));
+      ok(t.Function.is(new Function()));
       /* jshint ignore:end */
     });
 
     it('should return false when x is not a function', function () {
-      ko(Func.is(null));
-      ko(Func.is(undefined));
-      ko(Func.is(0));
-      ko(Func.is(''));
-      ko(Func.is([]));
+      ko(t.Function.is(null));
+      ko(t.Function.is(undefined));
+      ko(t.Function.is(0));
+      ko(t.Function.is(''));
+      ko(t.Function.is([]));
       /* jshint ignore:start */
-      ko(Func.is(new String('1')));
-      ko(Func.is(new Number(1)));
-      ko(Func.is(new Boolean()));
+      ko(t.Function.is(new String('1')));
+      ko(t.Function.is(new Number(1)));
+      ko(t.Function.is(new Boolean()));
       /* jshint ignore:end */
-      ko(Func.is(/a/));
-      ko(Func.is(new RegExp('a')));
-      ko(Func.is(new Error()));
-      ko(Func.is(new Date()));
+      ko(t.Function.is(/a/));
+      ko(t.Function.is(new RegExp('a')));
+      ko(t.Function.is(new Error()));
+      ko(t.Function.is(new Date()));
     });
 
   });
 
 });
 
-describe('Err', function () {
+describe('Error', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is an error', function () {
-      ok(Err.is(new Error()));
+      ok(t.Error.is(new Error()));
     });
 
     it('should return false when x is not an error', function () {
-      ko(Err.is(null));
-      ko(Err.is(undefined));
-      ko(Err.is(0));
-      ko(Err.is(''));
-      ko(Err.is([]));
+      ko(t.Error.is(null));
+      ko(t.Error.is(undefined));
+      ko(t.Error.is(0));
+      ko(t.Error.is(''));
+      ko(t.Error.is([]));
       /* jshint ignore:start */
-      ko(Err.is(new String('1')));
-      ko(Err.is(new Number(1)));
-      ko(Err.is(new Boolean()));
+      ko(t.Error.is(new String('1')));
+      ko(t.Error.is(new Number(1)));
+      ko(t.Error.is(new Boolean()));
       /* jshint ignore:end */
-      ko(Err.is(/a/));
-      ko(Err.is(new RegExp('a')));
-      ko(Err.is(new Date()));
+      ko(t.Error.is(/a/));
+      ko(t.Error.is(new RegExp('a')));
+      ko(t.Error.is(new Date()));
     });
 
   });
 
 });
 
-describe('Re', function () {
+describe('RegExp', function () {
 
   describe('#is(x)', function () {
 
     it('should return true when x is a regexp', function () {
-      ok(Re.is(/a/));
-      ok(Re.is(new RegExp('a')));
+      ok(t.RegExp.is(/a/));
+      ok(t.RegExp.is(new RegExp('a')));
     });
 
     it('should return false when x is not a regexp', function () {
-      ko(Re.is(null));
-      ko(Re.is(undefined));
-      ko(Re.is(0));
-      ko(Re.is(''));
-      ko(Re.is([]));
+      ko(t.RegExp.is(null));
+      ko(t.RegExp.is(undefined));
+      ko(t.RegExp.is(0));
+      ko(t.RegExp.is(''));
+      ko(t.RegExp.is([]));
       /* jshint ignore:start */
-      ko(Re.is(new String('1')));
-      ko(Re.is(new Number(1)));
-      ko(Re.is(new Boolean()));
+      ko(t.RegExp.is(new String('1')));
+      ko(t.RegExp.is(new Number(1)));
+      ko(t.RegExp.is(new Boolean()));
       /* jshint ignore:end */
-      ko(Re.is(new Error()));
-      ko(Re.is(new Date()));
+      ko(t.RegExp.is(new Error()));
+      ko(t.RegExp.is(new Date()));
     });
 
   });
 
 });
 
-describe('Dat', function () {
+describe('Date', function () {
 
   describe('#is(x)', function () {
 
-    it('should return true when x is a Dat', function () {
-      ok(Dat.is(new Date()));
+    it('should return true when x is a Date', function () {
+      ok(t.Date.is(new Date()));
     });
 
-    it('should return false when x is not a Dat', function () {
-      ko(Dat.is(null));
-      ko(Dat.is(undefined));
-      ko(Dat.is(0));
-      ko(Dat.is(''));
-      ko(Dat.is([]));
+    it('should return false when x is not a Date', function () {
+      ko(t.Date.is(null));
+      ko(t.Date.is(undefined));
+      ko(t.Date.is(0));
+      ko(t.Date.is(''));
+      ko(t.Date.is([]));
       /* jshint ignore:start */
-      ko(Dat.is(new String('1')));
-      ko(Dat.is(new Number(1)));
-      ko(Dat.is(new Boolean()));
+      ko(t.Date.is(new String('1')));
+      ko(t.Date.is(new Number(1)));
+      ko(t.Date.is(new Boolean()));
       /* jshint ignore:end */
-      ko(Dat.is(new Error()));
-      ko(Dat.is(/a/));
-      ko(Dat.is(new RegExp('a')));
+      ko(t.Date.is(new Error()));
+      ko(t.Date.is(/a/));
+      ko(t.Date.is(new RegExp('a')));
     });
 
   });
@@ -893,15 +869,15 @@ describe('struct', function () {
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>struct)();
+        (<any>t.struct)();
       }, 'Invalid argument `props` = `undefined` supplied to `struct` combinator');
 
       throwsWithMessage(function () {
-        struct({a: null});
+        t.struct({a: null});
       }, 'Invalid argument `props` = `[object Object]` supplied to `struct` combinator');
 
       throwsWithMessage(function () {
-        (<any>struct)({}, 1);
+        (<any>t.struct)({}, 1);
       }, 'Invalid argument `name` = `1` supplied to `struct` combinator');
 
     });
@@ -921,7 +897,7 @@ describe('struct', function () {
     it('should accept only valid values', function () {
       throwsWithMessage(function () {
         Point(1);
-      }, 'Invalid argument `value` = `1` supplied to struct type `{x: Num, y: Num}`');
+      }, 'Invalid argument `value` = `1` supplied to struct type `{x: t.Number, y: t.Number}`');
     });
 
   });
@@ -937,7 +913,7 @@ describe('struct', function () {
 
   describe('#update()', function () {
 
-    var Type = struct({name: Str});
+    var Type = t.struct({name: t.String});
     var instance = new Type({name: 'Giulio'});
 
     it('should return a new instance', function () {
@@ -952,51 +928,51 @@ describe('struct', function () {
   describe('#extend(props, [name])', function () {
 
     it('should extend an existing struct', function () {
-      var Point = struct({
-        x: Num,
-        y: Num
+      var Point = t.struct({
+        x: t.Number,
+        y: t.Number
       }, 'Point');
-      var Point3D = Point.extend({z: Num}, 'Point3D');
-      eq(getTypeName(Point3D), 'Point3D');
-      eq((<any>Point3D).meta.props.x, Num);
-      eq((<any>Point3D).meta.props.y, Num);
-      eq((<any>Point3D).meta.props.z, Num);
+      var Point3D = Point.extend({z: t.Number}, 'Point3D');
+      eq(t.getTypeName(Point3D), 'Point3D');
+      eq((<any>Point3D).meta.props.x, t.Number);
+      eq((<any>Point3D).meta.props.y, t.Number);
+      eq((<any>Point3D).meta.props.z, t.Number);
     });
 
     it('should handle an array as argument', function () {
-      var Type = struct({a: Str}, 'Type');
-      var Mixin = [{b: Num, c: Bool}];
+      var Type = t.struct({a: t.String}, 'Type');
+      var Mixin = [{b: t.Number, c: t.Boolean}];
       var NewType = Type.extend(Mixin, 'NewType');
-      eq(getTypeName(NewType), 'NewType');
-      eq((<any>NewType).meta.props.a, Str);
-      eq((<any>NewType).meta.props.b, Num);
-      eq((<any>NewType).meta.props.c, Bool);
+      eq(t.getTypeName(NewType), 'NewType');
+      eq((<any>NewType).meta.props.a, t.String);
+      eq((<any>NewType).meta.props.b, t.Number);
+      eq((<any>NewType).meta.props.c, t.Boolean);
     });
 
     it('should handle a struct (or list of structs) as argument', function () {
-      var A = struct({a: Str}, 'A');
-      var B = struct({b: Str}, 'B');
-      var C = struct({c: Str}, 'C');
-      var MixinD = {d: Str};
+      var A = t.struct({a: t.String}, 'A');
+      var B = t.struct({b: t.String}, 'B');
+      var C = t.struct({c: t.String}, 'C');
+      var MixinD = {d: t.String};
       var E = A.extend([B, C, MixinD]);
       eq(E.meta.props, {
-        a: Str,
-        b: Str,
-        c: Str,
-        d: Str
+        a: t.String,
+        b: t.String,
+        c: t.String,
+        d: t.String
       });
     });
 
     it('should support prototypal inheritance', function () {
-      var Rectangle = struct({
-        w: Num,
-        h: Num
+      var Rectangle = t.struct({
+        w: t.Number,
+        h: t.Number
       }, 'Rectangle');
       Rectangle.prototype.area = function () {
         return this.w * this.h;
       };
       var Cube = Rectangle.extend({
-        l: Num
+        l: t.Number
       });
       Cube.prototype.volume = function () {
         return this.area() * this.l;
@@ -1027,11 +1003,11 @@ describe('enums', function () {
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>enums)();
+        (<any>t.enums)();
       }, 'Invalid argument `map` = `undefined` supplied to `enums` combinator');
 
       throwsWithMessage(function () {
-        (<any>enums)({}, 1);
+        (<any>t.enums)({}, 1);
       }, 'Invalid argument `name` = `1` supplied to `enums` combinator');
 
     });
@@ -1040,7 +1016,7 @@ describe('enums', function () {
 
   describe('constructor', function () {
 
-    var T = enums({a: 0}, 'T');
+    var T = t.enums({a: 0}, 'T');
 
     it('should throw if used with new', function () {
       throwsWithMessage(function () {
@@ -1061,7 +1037,7 @@ describe('enums', function () {
 
   describe('#is(x)', function () {
 
-    var Direction = enums({
+    var Direction = t.enums({
       North: 0,
       East: 1,
       South: 2,
@@ -1087,7 +1063,7 @@ describe('enums', function () {
   describe('#of(keys)', function () {
 
     it('should return an enum', function () {
-      var Size = (<any>enums).of(['large', 'small', 1, 10.9]); ///!!!
+      var Size = (<any>t.enums).of(['large', 'small', 1, 10.9]); ///!!!
       ok(Size.meta.map.large === 'large');
       ok(Size.meta.map.small === 'small');
       ok(Size.meta.map['1'] === 1);
@@ -1095,7 +1071,7 @@ describe('enums', function () {
     });
 
     it('should handle a string', function () {
-      var Size = (<any>enums).of('large small 10');
+      var Size = (<any>t.enums).of('large small 10');
       ok(Size.meta.map.large === 'large');
       ok(Size.meta.map.small === 'small');
       ok(Size.meta.map['10'] === '10');
@@ -1112,20 +1088,20 @@ describe('enums', function () {
 
 describe('union', function () {
 
-  var Circle = struct({
+  var Circle = t.struct({
     center: Point,
-    radius: Num
+    radius: t.Number
   }, 'Circle');
 
-  var Rectangle = struct({
+  var Rectangle = t.struct({
     a: Point,
     b: Point
   });
 
-  var Shape = union([Circle, Rectangle], 'Shape');
+  var Shape = t.union([Circle, Rectangle], 'Shape');
 
   Shape.dispatch = function (values) {
-    assert(Obj.is(values));
+    assert(t.Object.is(values));
     return values.hasOwnProperty('center') ?
       Circle :
       Rectangle;
@@ -1136,19 +1112,19 @@ describe('union', function () {
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>union)();
+        (<any>t.union)();
       }, 'Invalid argument `types` = `undefined` supplied to `union` combinator');
 
       throwsWithMessage(function () {
-        union([]);
+        t.union([]);
       }, 'Invalid argument `types` = `` supplied to `union` combinator, provide at least two types');
 
       throwsWithMessage(function () {
-        union([Circle]);
+        t.union([Circle]);
       }, 'Invalid argument `types` = `Circle` supplied to `union` combinator, provide at least two types');
 
       throwsWithMessage(function () {
-        (<any>union)([Circle, Point], 1);
+        (<any>t.union)([Circle, Point], 1);
       }, 'Invalid argument `name` = `1` supplied to `union` combinator');
 
     });
@@ -1159,20 +1135,20 @@ describe('union', function () {
 
     it('should throw when dispatch() is not implemented', function () {
       throwsWithMessage(function () {
-        var T = union([Str, Num], 'T');
+        var T = t.union([t.String, t.Number], 'T');
         T.dispatch = null;
         T(1);
       }, 'Unimplemented `dispatch()` function for union type `T`');
     });
 
     it('should have a default dispatch() implementation', function () {
-      var T = union([Str, Num], 'T');
+      var T = t.union([t.String, t.Number], 'T');
       eq(T(1), 1);
     });
 
     it('should throw when dispatch() does not return a type', function () {
       throwsWithMessage(function () {
-        var T = union([Str, Num], 'T');
+        var T = t.union([t.String, t.Number], 'T');
         T(true);
       }, 'The `dispatch()` function of union type `T` returns no type constructor');
     });
@@ -1184,8 +1160,8 @@ describe('union', function () {
 
     it('should throw if used with new and union types are not instantiables with new', function () {
       throwsWithMessage(function () {
-        var T = union([Str, Num], 'T');
-        T.dispatch = function () { return Str; };
+        var T = t.union([t.String, t.Number], 'T');
+        T.dispatch = function () { return String; };
         /* jshint ignore:start */
         var x = new T('a');
         /* jshint ignore:end */
@@ -1230,26 +1206,26 @@ describe('maybe', function () {
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>maybe)();
+        (<any>t.maybe)();
       }, 'Invalid argument `type` = `undefined` supplied to `maybe` combinator');
 
       throwsWithMessage(function () {
-        (<any>maybe)(Point, 1);
+        (<any>t.maybe)(Point, 1);
       }, 'Invalid argument `name` = `1` supplied to `maybe` combinator');
 
     });
 
     it('should be idempotent', function () {
-      var MaybeStr = maybe(Str);
-      ok(maybe(MaybeStr) === MaybeStr);
+      var MaybeString = t.maybe(t.String);
+      ok(t.maybe(MaybeString) === MaybeString);
     });
 
     it('should be noop with Any', function () {
-      ok(maybe(Any) === Any);
+      ok(t.maybe(t.Any) === t.Any);
     });
 
     it('should be noop with Nil', function () {
-      ok((<any>maybe)(Nil) === Nil);
+      ok((<any>t.maybe)(t.Nil) === t.Nil);
     });
 
   });
@@ -1259,21 +1235,21 @@ describe('maybe', function () {
     it('should throw if used with new', function () {
       throwsWithMessage(function () {
         /* jshint ignore:start */
-        var T = maybe(Str, 'T');
+        var T = t.maybe(t.String, 'T');
         var x = new (<any>T)();
         /* jshint ignore:end */
       }, 'Operator `new` is forbidden for type `T`');
     });
 
     it('should coerce values', function () {
-      var T = maybe(Point);
+      var T = t.maybe(Point);
       eq(T(null), null);
       eq(T(undefined), null);
       ok(Point.is(T({x: 0, y: 0})));
     });
 
     it('should be idempotent', function () {
-      var T = maybe(Point);
+      var T = t.maybe(Point);
       var p1 = T({x: 0, y: 0});
       var p2 = T(p1);
       eq(Object.isFrozen(p1), true);
@@ -1286,7 +1262,7 @@ describe('maybe', function () {
   describe('#is(x)', function () {
 
     it('should return true when x is an instance of the maybe', function () {
-      var Radio = maybe(Str);
+      var Radio = t.maybe(t.String);
       ok(Radio.is('a'));
       ok(Radio.is(null));
       ok(Radio.is(undefined));
@@ -1302,18 +1278,18 @@ describe('maybe', function () {
 
 describe('tuple', function () {
 
-  var Area = tuple([Num, Num], 'Area');
+  var Area = t.tuple([t.Number, t.Number], 'Area');
 
   describe('combinator', function () {
 
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>tuple)();
+        (<any>t.tuple)();
       }, 'Invalid argument `types` = `undefined` supplied to `tuple` combinator');
 
       throwsWithMessage(function () {
-        (<any>tuple)([Point, Point], 1);
+        (<any>t.tuple)([Point, Point], 1);
       }, 'Invalid argument `name` = `1` supplied to `tuple` combinator');
 
     });
@@ -1322,8 +1298,8 @@ describe('tuple', function () {
 
   describe('constructor', function () {
 
-    var S = struct({}, 'S');
-    var T = tuple([S, S], 'T');
+    var S = t.struct({}, 'S');
+    var T = t.tuple([S, S], 'T');
 
     it('should coerce values', function () {
       var t = T([{}, {}]);
@@ -1344,7 +1320,7 @@ describe('tuple', function () {
     });
 
     it('should be idempotent', function () {
-      var T = tuple([Str, Num]);
+      var T = t.tuple([t.String, t.Number]);
       var p1 = T(['a', 1]);
       var p2 = T(p1);
       eq(Object.isFrozen(p1), true);
@@ -1374,7 +1350,7 @@ describe('tuple', function () {
 
   describe('#update()', function () {
 
-    var Type = tuple([Str, Num]);
+    var Type = t.tuple([t.String, t.Number]);
     var instance = Type(['a', 1]);
 
     it('should return a new instance', function () {
@@ -1399,11 +1375,11 @@ describe('list', function () {
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>list)();
+        (<any>t.list)();
       }, 'Invalid argument `type` = `undefined` supplied to `list` combinator');
 
       throwsWithMessage(function () {
-        (<any>list)(Point, 1);
+        (<any>t.list)(Point, 1);
       }, 'Invalid argument `name` = `1` supplied to `list` combinator');
 
     });
@@ -1412,8 +1388,8 @@ describe('list', function () {
 
   describe('constructor', function () {
 
-    var S = struct({}, 'S');
-    var T = list(S, 'T');
+    var S = t.struct({}, 'S');
+    var T = t.list(S, 'T');
 
     it('should coerce values', function () {
       var t = T([{}]);
@@ -1433,7 +1409,7 @@ describe('list', function () {
     });
 
     it('should be idempotent', function () {
-      var T = list(Num);
+      var T = t.list(t.Number);
       var p1 = T([1, 2]);
       var p2 = T(p1);
       eq(Object.isFrozen(p1), true);
@@ -1445,7 +1421,7 @@ describe('list', function () {
 
   describe('#is(x)', function () {
 
-    var Path = list(Point);
+    var Path = t.list(Point);
     var p1 = new Point({x: 0, y: 0});
     var p2 = new Point({x: 1, y: 1});
 
@@ -1461,7 +1437,7 @@ describe('list', function () {
 
   describe('#update()', function () {
 
-    var Type = list(Str);
+    var Type = t.list(t.String);
     var instance = Type(['a', 'b']);
 
     it('should return a new instance', function () {
@@ -1488,15 +1464,15 @@ describe('subtype', function () {
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>subtype)();
+        (<any>t.subtype)();
       }, 'Invalid argument `type` = `undefined` supplied to `subtype` combinator');
 
       throwsWithMessage(function () {
-        subtype(Point, null);
+        t.subtype(Point, null);
       }, 'Invalid argument `predicate` = `null` supplied to `subtype` combinator');
 
       throwsWithMessage(function () {
-        (<any>subtype)(Point, True, 1);
+        (<any>t.subtype)(Point, True, 1);
       }, 'Invalid argument `name` = `1` supplied to `subtype` combinator');
 
     });
@@ -1508,21 +1484,21 @@ describe('subtype', function () {
     it('should throw if used with new and a type that is not instantiable with new', function () {
       throwsWithMessage(function () {
         /* jshint ignore:start */
-        var T = subtype(Str, function () { return true; }, 'T');
+        var T = t.subtype(t.String, function () { return true; }, 'T');
         var x = new(<any> T)();
         /* jshint ignore:end */
       }, 'Operator `new` is forbidden for type `T`');
     });
 
     it('should coerce values', function () {
-      var T = subtype(Point, function () { return true; });
+      var T = t.subtype(Point, function () { return true; });
       var p = T({x: 0, y: 0});
       ok(Point.is(p));
     });
 
     it('should accept only valid values', function () {
       var predicate = function (p:any) { return p.x > 0; };
-      var T = subtype(Point, predicate, 'T');
+      var T = t.subtype(Point, predicate, 'T');
       throwsWithMessage(function () {
         T({x: 0, y: 0});
       }, 'Invalid argument `value` = `[object Object]` supplied to subtype type `T`');
@@ -1532,7 +1508,7 @@ describe('subtype', function () {
 
   describe('#is(x)', function () {
 
-    var Positive = subtype(Num, function (n) {
+    var Positive = t.subtype(t.Number, function (n) {
       return n >= 0;
     });
 
@@ -1548,7 +1524,7 @@ describe('subtype', function () {
 
   describe('#update()', function () {
 
-    var Type = subtype(Str, function (s) { return s.length > 2; });
+    var Type = t.subtype(t.String, function (s) { return s.length > 2; });
     var instance = Type('abc');
 
     it('should return a new instance', function () {
@@ -1572,15 +1548,15 @@ describe('dict', function () {
     it('should throw if used with wrong arguments', function () {
 
       throwsWithMessage(function () {
-        (<any>dict)();
+        (<any>t.dict)();
       }, 'Invalid argument `domain` = `undefined` supplied to `dict` combinator');
 
       throwsWithMessage(function () {
-        (<any>dict)(Str);
+        (<any>t.dict)(String);
       }, 'Invalid argument `codomain` = `undefined` supplied to `dict` combinator');
 
       throwsWithMessage(function () {
-        (<any>dict)(Str, Point, 1);
+        (<any>t.dict)(String, Point, 1);
       }, 'Invalid argument `name` = `1` supplied to `dict` combinator');
 
     });
@@ -1589,11 +1565,11 @@ describe('dict', function () {
 
   describe('constructor', function () {
 
-    var S = struct({}, 'S');
-    var Domain = subtype(Str, function (x) {
+    var S = t.struct({}, 'S');
+    var Domain = t.subtype(t.String, function (x) {
       return x !== 'forbidden';
     }, 'Domain');
-    var T = dict(Domain, S, 'T');
+    var T = t.dict(Domain, S, 'T');
 
     it('should coerce values', function () {
       var t = T({a: {}});
@@ -1617,7 +1593,7 @@ describe('dict', function () {
     });
 
     it('should be idempotent', function () {
-      var T = dict(Str, Str);
+      var T = t.dict(t.String, t.String);
       var p1 = T({a: 'a', b: 'b'});
       var p2 = T(p1);
       eq(Object.isFrozen(p1), true);
@@ -1629,7 +1605,7 @@ describe('dict', function () {
 
   describe('#is(x)', function () {
 
-    var T = dict(Str, Point);
+    var T = t.dict(t.String, Point);
     var p1 = new Point({x: 0, y: 0});
     var p2 = new Point({x: 1, y: 1});
 
@@ -1645,7 +1621,7 @@ describe('dict', function () {
 
   describe('#update()', function () {
 
-    var Type = dict(Str, Str);
+    var Type = t.dict(t.String, t.String);
     var instance = Type({p1: 'a', p2: 'b'});
 
     it('should return a new instance', function () {
@@ -1666,20 +1642,20 @@ describe('dict', function () {
 describe('func', function () {
 
   it('should handle a no types', function () {
-    var T = func([], Str);
+    var T = t.func([], t.String);
     eq(T.meta.domain.length, 0);
     var getGreeting = T.of(function () { return 'Hi'; });
     eq(getGreeting(), 'Hi');
   });
 
   it('should handle a single type', function () {
-    var T = func(Num, Num);
+    var T = t.func(t.Number, t.Number);
     eq(T.meta.domain.length, 1);
-    ok(T.meta.domain[0] === Num);
+    ok(T.meta.domain[0] === Number);
   });
 
   it('should automatically instrument a function', function () {
-    var T = func(Num, Num);
+    var T = t.func(t.Number, t.Number);
     var f = function () { return 'hi'; };
     ok(T.is(T(f)));
   });
@@ -1688,7 +1664,7 @@ describe('func', function () {
 
     it('should check the arguments', function () {
 
-      var T = func([Num, Num], Num);
+      var T = t.func([t.Number, t.Number], t.Number);
       var sum = T.of(function (a:any, b:any) {
         return a + b;
       });
@@ -1696,38 +1672,38 @@ describe('func', function () {
 
       throwsWithMessage(function () {
         sum(1, 2, 3);
-      }, 'Invalid argument `value` = `1,2,3` supplied to tuple type `[Num, Num]`, expected an `Arr` of length `2`');
+      }, 'Invalid argument `value` = `1,2,3` supplied to tuple type `[Number, Number]`, expected an `Arr` of length `2`');
 
       throwsWithMessage(function () {
         sum('a', 2);
-      }, 'Invalid argument `value` = `a` supplied to irreducible type `Num`');
+      }, 'Invalid argument `value` = `a` supplied to irreducible type `Number`');
 
     });
 
     it('should check the return value', function () {
 
-      var T = func([Num, Num], Num);
+      var T = t.func([t.Number, t.Number], t.Number);
       var sum = T.of(function () {
         return 'a';
       });
 
       throwsWithMessage(function () {
         sum(1, 2);
-      }, 'Invalid argument `value` = `a` supplied to irreducible type `Num`');
+      }, 'Invalid argument `value` = `a` supplied to irreducible type `Number`');
 
     });
 
     it('should preserve `this`', function () {
       var o = {name: 'giulio'};
-      (<any>o).getTypeName = func([], Str).of(function () {
+      (<any>o).getTypeName = t.func([], t.String).of(function () {
         return this.name;
       });
       eq((<any>o).getTypeName(), 'giulio');
     });
 
     it('should handle function types', function () {
-      var A = func([Str], Str);
-      var B = func([Str, A], Str);
+      var A = t.func([t.String], t.String);
+      var B = t.func([t.String, A], t.String);
 
       var f = A.of(function (s:any) {
         return s + '!';
@@ -1741,8 +1717,8 @@ describe('func', function () {
 
     it('should be idempotent', function () {
       var f = function (s:any) { return s; };
-      var g = func([Str], Str).of(f);
-      var h = func([Str], Str).of(g);
+      var g = t.func([t.String], t.String).of(f);
+      var h = t.func([t.String], t.String).of(g);
       ok(h === g);
     });
 
@@ -1751,7 +1727,7 @@ describe('func', function () {
   describe('currying', function () {
 
     it('should curry functions', function () {
-      var Type = func([Num, Num, Num], Num);
+      var Type = t.func([t.Number, t.Number, t.Number], t.Number);
       var sum = Type.of(function (a:any, b:any, c:any) {
         return a + b + c;
       });
@@ -1761,7 +1737,7 @@ describe('func', function () {
       eq(sum(1)(2)(3), 6);
 
       // important: the curried function must be of the correct type
-      var CurriedType = func([Num, Num], Num);
+      var CurriedType = t.func([t.Number, t.Number], t.Number);
       var sum1 = sum(1);
       eq(sum1(2, 3), 6);
       eq(sum1(2)(3), 6);
@@ -1770,19 +1746,19 @@ describe('func', function () {
 
     it('should throw if partial arguments are wrong', function () {
 
-      var T = func([Num, Num], Num);
+      var T = t.func([t.Number, t.Number], t.Number);
       var sum = T.of(function (a:any, b:any) {
         return a + b;
       });
 
       throwsWithMessage(function () {
         sum('a');
-      }, 'Invalid argument `value` = `a` supplied to irreducible type `Num`');
+      }, 'Invalid argument `value` = `a` supplied to irreducible type `Number`');
 
       throwsWithMessage(function () {
         var sum1 = sum(1);
         sum1('a');
-      }, 'Invalid argument `value` = `a` supplied to irreducible type `Num`');
+      }, 'Invalid argument `value` = `a` supplied to irreducible type `Number`');
 
     });
 

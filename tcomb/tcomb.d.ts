@@ -4,61 +4,72 @@
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 // Original Definitions by: Jed Mao <https://github.com/jedmao>
-declare namespace TComb {
-  export interface tcomb {
-    format: (format: string, ...values: any[]) => string;
-    getFunctionName: (fn: Function) => string;
-    getTypeName: (type: TCombBase) => string;
-    mixin: (target: {}, source: {}, overwrite?: boolean) => any;
-    slice: typeof Array.prototype.slice;
-    shallowCopy: (x: TCombBase) => TCombBase;
-    update: (instance: any, spec: {} ) => TCombBase;
-    assert: (condition: boolean, message?: string, ...values: any[]) => void;
-    fail: (message?: string) => void;
-    Any: Any_Static;
-    Nil: Nil_Static;
-    Str: Str_Static;
-    Num: Num_Static;
-    Bool: Bool_Static;
-    Arr: Arr_Static;
-    Obj: Obj_Static;
+declare module 'tcomb' {
+  export = tcomb;
 
-    Func: Func_Static;
-    func: {
+  namespace tcomb {
+
+    export function format(format: string, ...values: any[]): string;
+    export function getFunctionName(fn: Function): string;
+    export function getTypeName(type: TCombBase): string;
+    export function mixin(target: {}, source: {}, overwrite?: boolean): any;
+    export var slice: typeof Array.prototype.slice;
+    export function shallowCopy(x: TCombBase): TCombBase;
+    export function update(instance: any, spec: {}): TCombBase;
+    export function assert(
+      condition: boolean,
+      message?: string,
+      ...values: any[]
+    ): void;
+    export function fail(message?: string): void;
+    export var Any: Any_Static;
+	 // export var Integer: Integer_Static;
+    export var Nil: Nil_Static;
+    export var String: Str_Static;
+    export var Number: Num_Static;
+    export var Boolean: Bool_Static;
+    export var Array: Arr_Static;
+    export var Object: Obj_Static;
+
+    export var Function: Func_Static;
+    export var func: {
         (domain: TCombBase[], codomain: TCombBase, name?: string): Func_Static;
         (domain: TCombBase, codomain: TCombBase, name?: string) : Func_Static;
     }
-    Err: Err_Static;
-    Re: Re_Static;
-    Dat: Dat_Static;
-    Type: Type_Static;
-    irreducible: (name: string, is: TypePredicate) => TCombBase;
-    struct: (props: Object, name?: string) => Struct_Static;
+    export var Error: Err_Static;
+    export var RegExp: Re_Static;
+    export var Date: Dat_Static;
+    export var Type: Type_Static;
+    export function irreducible(name: string, is: TypePredicate): TCombBase;
+    export function struct(props: Object, name?: string): Struct_Static;
 
-    Union: Union_Static;
-    Maybe: Maybe_Static;
+    export var Union: Union_Static;
+    export var Maybe: Maybe_Static;
 
-    enums(map: Object, name?: string): TCombBase;
-    union(types: TCombBase[], name?: string): Union_Static;
-    maybe(type: TCombBase, name?: string): Maybe_Static;
+    export function enums(map: Object, name?: string): TCombBase;
+    export function union(types: TCombBase[], name?: string): Union_Static;
+    export function maybe(type: TCombBase, name?: string): Maybe_Static;
 
-    Tuple: Tuple_Static;
-    tuple:(types: TCombBase[], name?: string)=> Tuple_Static;
+    export var Tuple: Tuple_Static;
+    export function tuple(types: TCombBase[], name?: string): Tuple_Static;
 
-    Subtype: Subtype_Static;
+    export var Subtype: Subtype_Static;
 
-    List: List_Static;
-    list:(type: TCombBase, name?: string)=> List_Static;
+    export var List: List_Static;
+    export function list(type: TCombBase, name?: string): List_Static;
 
-    Dict: Dict_Static;
-    dict:(domain: TCombBase, codomain: TCombBase, name?: string)=> Dict_Static;
+    export var Dict: Dict_Static;
+    export function dict(
+      domain: TCombBase,
+      codomain: TCombBase,
+      name?: string
+    ): Dict_Static;
 
-    subtype(type: TCombBase, predicate: TypePredicate, name?: string): Subtype_Static;
-
-  }
-
-
-
+    export function subtype(
+      type: TCombBase,
+      predicate: TypePredicate,
+      name?: string
+    ): Subtype_Static;
 
   export interface TCombBase {
     meta: {
@@ -69,7 +80,7 @@ declare namespace TComb {
       /**
        * The type name.
        */
-      name: string;
+      name: string|undefined;
     };
     displayName: string;
     is(value: any): boolean;
@@ -95,8 +106,8 @@ declare namespace TComb {
   }
 
   export interface Nil_Static extends TCombBase {
-    new (value: any): Nil_Instance;
-    (value: any): Nil_Instance;
+    new (value: null|undefined): Nil_Instance;
+    (value: null|undefined): Nil_Instance;
   }
 
 
@@ -111,11 +122,11 @@ declare namespace TComb {
       /**
        * The type kind, equal to "irreducible" for irreducible types.
        */
-      kind: string;
+      kind: 'irreducible';
       /**
        * The type name.
        */
-      name: string;
+      name: 'String';
       /**
        * The type predicate.
        */
@@ -226,9 +237,9 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): Struct_Instance;
     (value: any, mutable?: boolean): Struct_Instance;
     meta: {
-      kind: string;
-      name: string;
-      props: any[];
+      kind: 'struct';
+      name: string|undefined;
+      props: any;
     };
     /**
      * @param mixins - Contains the new props.
@@ -281,11 +292,11 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): Union_Instance;
     (value: any, mutable?: boolean): Union_Instance;
     meta: {
-      kind: string;
-      name: string;
+      kind: 'union';
+      name: string|undefined;
       types: TCombBase[];
     };
-    dispatch(x: any): TCombBase;
+    dispatch(x: any): Function;
   }
 
   export interface Union_Instance {
@@ -303,9 +314,9 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): Maybe_Instance;
     (value: any, mutable?: boolean): Maybe_Instance;
     meta: {
-      kind: string;
-      name: string;
-      typee: TCombBase;
+      kind: 'maybe';
+      name: string|undefined;
+      type: TCombBase;
     };
   }
 
@@ -321,8 +332,8 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): Tuple_Instance;
     (value: any, mutable?: boolean): Tuple_Instance;
     meta: {
-      kind: string;
-      name: string;
+      kind: 'tuple';
+      name: string|undefined;
       types: TCombBase[];
     };
   }
@@ -341,8 +352,8 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): Subtype_Instance;
     (value: any, mutable?: boolean): Subtype_Instance;
     meta: {
-      kind: string;
-      name: string;
+      kind: 'subtype';
+      name: string|undefined;
       type: TCombBase;
       predicate: TypePredicate;
     };
@@ -361,8 +372,8 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): List_Instance;
     (value: any, mutable?: boolean): List_Instance;
     meta: {
-      kind: string;
-      name: string;
+      kind: 'list';
+      name: string|undefined;
       'type': TCombBase;
     };
   }
@@ -381,8 +392,8 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): Dict_Instance;
     (value: any, mutable?: boolean): Dict_Instance;
     meta: {
-      kind: string;
-      name: string;
+      kind: 'dict';
+      name: string|undefined;
       domain: TCombBase;
       codomain: TCombBase;
     };
@@ -406,8 +417,8 @@ declare namespace TComb {
     new (value: any, mutable?: boolean): Func_Instance;
     (value: any, mutable?: boolean): Func_Instance;
     meta: {
-      kind: string;
-      name: string;
+      kind: 'func';
+      name: string|undefined;
       domain: any;
       codomain: TCombBase;
     };
@@ -417,10 +428,6 @@ declare namespace TComb {
   interface Func_Instance {
   }
 
-}
+  }
 
-declare var t: TComb.tcomb;
-
-declare module "tcomb" {
-  export = t;
 }

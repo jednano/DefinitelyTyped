@@ -11,11 +11,8 @@ interface ClassDictionary {
 
 interface ClassArray extends Array<ClassValue> { }
 
-interface ClassNamesFn {
-	(...classes: ClassValue[]): string;
-}
-
-declare var classNames: ClassNamesFn;
+declare function classNames(...classes: ClassValue[]): string;
+declare namespace classNames { }
 
 declare module "classnames" {
 	export = classNames

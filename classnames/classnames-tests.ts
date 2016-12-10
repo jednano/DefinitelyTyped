@@ -1,4 +1,4 @@
-import classNames = require('classnames')
+import * as classNames from 'classnames';
 
 classNames('foo', 'bar'); // => 'foo bar'
 
